@@ -57,10 +57,25 @@ public class BoardServiceImpl implements BoardService {
 		return mapper.read(bno);
 	}
 
+	@Transactional
 	@Override
 	public boolean modify(BoardVO board) {
+		//게시물 수정시 첨부파일을 모두 삭제한 뒤 새로운 첨부파일을 추가하는 방식으로 설계
+		//DB에서 첨부파일 삭제하기
 		log.info("modify...." + board) ;
-		return mapper.update(board) == 1;  //update() 메소드의 return 타입이 int 이므로 boolean 타입으로 나올 수 있도록 만들어줌
+		
+		attachMapper.deleteAll(board.getBno());
+		
+		boolean modifyResult = mapper.update(board) == 1;
+		
+		if(modifyResult && board.getAttachList() != null && board.getAttachList().size() > 0) {
+			board.getAttachList().forEach(attach -> {
+				attach.setBno(board.getBno());
+				attachMapper.insert(attach);
+			});
+		}
+		
+		return modifyResult;  //update() 메소드의 return 타입이 int 이므로 boolean 타입으로 나올 수 있도록 만들어줌
 	}
 
 	@Transactional
